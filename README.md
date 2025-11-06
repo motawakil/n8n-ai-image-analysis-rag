@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+# n8n-ai-image-analysis-rag
+AI-powered image analysis workflow using n8n with OCR, RAG, and Google Gemini
+=======
 <div align="center">
 
 # 🤖 AI-Powered OCR + RAG Workflow
@@ -18,6 +22,7 @@
 </div>
 
 ---
+
 ## 📋 Overview
 
 This repository contains a powerful **n8n workflow** that seamlessly processes documents through an intelligent pipeline:
@@ -29,7 +34,14 @@ graph LR
     C --> D[💾 Vector Store]
     D --> E[🤖 AI Agent]
     E --> F[📊 JSON Output]
+```
+<br>
 
+<p align="center">
+  <img src="./assets/workflow-screenshot.png" alt="Workflow Screenshot" width="900">
+</p>
+
+<br>
 **Key Capabilities:**
 - ✅ Accept images or PDFs via webhook/form
 - ✅ Extract text using advanced OCR
@@ -417,3 +429,4 @@ Made with ❤️ for the automation community
 [Report Bug](https://github.com/yourusername/yourrepo/issues) • [Request Feature](https://github.com/yourusername/yourrepo/issues)
 
 </div>
+>>>>>>> b85d01e (Initial commit)
