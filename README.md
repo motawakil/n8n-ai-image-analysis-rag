@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # n8n-ai-image-analysis-rag
 AI-powered image analysis workflow using n8n with OCR, RAG, and Google Gemini
 =======
