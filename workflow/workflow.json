@@ -1,0 +1,403 @@
+{
+  "name": "article1",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "fcc2d240-4220-410d-b11b-94909452455b",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1296,
+        1744
+      ],
+      "id": "3dbce019-d213-4539-994d-4c5ebe6d2890",
+      "name": "🎯 Receive Product Image",
+      "webhookId": "fcc2d240-4220-410d-b11b-94909452455b",
+      "notes": "ENTRY POINT: Receives product images via POST request\n\nExpected payload format:\n{\n  \"image\": \"base64_encoded_string\",\n  \"filename\": \"product-image.jpg\",\n  \"mimeType\": \"image/jpeg\"\n}\n\nThis webhook accepts product ingredient images for analysis."
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a knowledgeable and analytical health & nutrition assistant specialized in ingredient safety.  \nYou will receive the ingredients of a product dynamically as:\n\n\"{{ $json.ParsedResults[0].ParsedText }}\"\n\nYour goal is to analyze this list and identify any substances that could potentially have negative effects on sexual health, libido, or reproductive function.\n\n---\n\n### ANALYSIS TASKS\n\n1. **Identify Risks**\n   - Highlight ingredients that may be harmful or controversial for sexual or reproductive health.  \n   - For each one, explain briefly why (based only on scientific evidence).  \n   - Consider factors such as endocrine disruption, hormonal interference, fertility risks, sperm/egg quality impact, irritation, or toxicity.  \n   - If the product is safe for general use but risky for specific groups (e.g., teenagers, pregnant women, high exposure), mention this clearly in the message or alternatives.\n\n2. **Rate the Overall Risk**\n   - Assign a **riskScore** between 1 and 10:  \n     - 7-10: minimal or no concern  \n     - 4–6: moderate concern  \n     - 1-3: high concern (multiple harmful substances or strong evidence)\n\n3. **Generate Contextual Alternatives**\n   - Suggest healthier **alternatives or practices** based on the detected risks.  \n   - Alternatives can include safer product types, natural substitutes, or practical advice (e.g., Use fragrance-free moisturizers or Prefer organic certified lotions).  \n   - Each alternative should include a short **name** and a concise **description**.  \n   - Example:\n     ```json\n     \"alternatives\": [\n       { \"name\": \"Shampooing bio sans parabènes\", \"description\": \"Utilise des conservateurs naturels non perturbateurs endocriniens\" },\n       { \"name\": \"Savon d'Alep naturel\", \"description\": \"Contient uniquement des huiles végétales et sans sulfates\" }\n     ]\n     ```\n\n---\n\n### OUTPUT FORMAT\n\nAlways return a valid JSON object in this exact structure:\n\n```json\n{\n  \"riskScore\": \"integer 1-10\",               // Overall concern level\n  \"dangerousIngredients\": [                  // Harmful or questionable ingredients\n    {\n      \"name\": \"string\",                      // Ingredient name\n      \"effect\": \"string\"                     // Short scientific explanation (max 20 words)\n    }\n  ],\n  \"alternatives\": [                          // Healthy or safer suggestions (based on detected risks)\n    {\n      \"name\": \"string\",\n      \"description\": \"string\"\n    }\n  ],\n  \"message\": \"string\"                        // Short summary or advice (e.g., \"Safe for normal use but avoid during pregnancy\")\n}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        112,
+        1568
+      ],
+      "id": "810c9494-44ee-4618-9bcf-b9d81f5b0541",
+      "name": "🤖 AI Safety Analyzer",
+      "alwaysOutputData": false,
+      "notes": "CORE INTELLIGENCE: AI Agent analyzes ingredients for health risks\n\nFunctionality:\n- Receives extracted text from OCR\n- Uses Google Gemini AI with RAG knowledge base\n- Analyzes ingredients for sexual/reproductive health risks\n- Returns structured JSON with risk scores, dangerous ingredients, and alternatives\n\nOutput includes:\n- Risk score (1-10)\n- List of dangerous ingredients with effects\n- Safer alternatives\n- Overall safety message"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -64,
+        1840
+      ],
+      "id": "36ea9ada-5779-4be9-abb7-5e4a0a639558",
+      "name": "🧠 Google Gemini AI Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "eatGC3TowercmmNn",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "notes": "AI LANGUAGE MODEL: Powers the ingredient analysis\n\nRequires:\n- Google Gemini API credentials\n- Connected to AI Agent for natural language processing\n\nNote: You'll need to set up your own Google Gemini API key"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Example JavaScript (Function Node in n8n)\nconst imageBase64 = $json[\"body\"][\"image\"]; // base64 from webhook\nconst mimeType = $json[\"body\"][\"mimeType\"]; // e.g., image/jpeg\n\n// Prepend data URI\nconst formattedBase64 = `data:${mimeType};base64,${imageBase64}`;\nreturn {\n  json: {\n    imageBase64: formattedBase64,\n    filename: $json[\"body\"][\"filename\"]\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        1712
+      ],
+      "id": "4ea2307f-0609-4065-bc18-c9f78561bb8d",
+      "name": "📝 Format Image Data",
+      "notes": "DATA PREPARATION: Formats base64 image for OCR processing\n\nProcess:\n1. Extracts base64 image string from webhook payload\n2. Extracts MIME type (image/jpeg, image/png, etc.)\n3. Combines them into proper data URI format\n4. Passes formatted data to OCR service\n\nInput: Raw webhook data\nOutput: Formatted base64 data URI"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.ocr.space/parse/image",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": ""
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "language",
+              "value": "eng"
+            },
+            {
+              "name": "OCREngine",
+              "value": "2"
+            },
+            {
+              "name": "isOverlayRequired",
+              "value": "false"
+            },
+            {
+              "name": "detectOrientation",
+              "value": "true"
+            },
+            {
+              "name": "scale",
+              "value": "true"
+            },
+            {
+              "name": "base64Image",
+              "value": "={{ $json.imageBase64 }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -416,
+        1712
+      ],
+      "id": "e1514306-ecf8-4288-87f3-55fec8ef563e",
+      "name": "🔍 Extract Text from Image (OCR)",
+      "notes": "TEXT EXTRACTION: Converts product image to readable text\n\nOCR.space API Configuration:\n- Engine: v2 (most accurate)\n- Language: English\n- Auto-detect orientation: enabled\n- Auto-scale for better accuracy: enabled\n\nNote: Replace API key with your own from ocr.space\n\nOutput: Extracted ingredient text ready for AI analysis"
+    },
+    {
+      "parameters": {
+        "content": "## 🔍 OCR SERVICE\n### OCR.space API\n\n**Free tier includes:**\n- 25,000 requests/month\n- Max file size: 1MB\n- Multiple languages\n\n**Get your API key:**\nhttps://ocr.space/ocrapi\n\n**Features used:**\n- Engine 2 (best accuracy)\n- Orientation detection\n- Auto-scaling",
+        "height": 480,
+        "width": 432,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -688,
+        1392
+      ],
+      "typeVersion": 1,
+      "id": "61e0213a-b362-44ea-9fed-c7ee1ccb3715",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolName": "rag_knowledge",
+        "toolDescription": "use this knowledge to answer the user question !!",
+        "memoryKey": {
+          "__rl": true,
+          "mode": "list",
+          "value": "vector_store_key"
+        }
+      },
+      "id": "1b10f501-28d2-40b2-84d2-0c8df294796a",
+      "name": "📚 Knowledge Base (RAG)",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "position": [
+        176,
+        1888
+      ],
+      "typeVersion": 1.2,
+      "notes": "RAG RETRIEVAL: Provides AI with expert knowledge\n\nRAG = Retrieval-Augmented Generation\n\nFunctionality:\n- Stores scientific research about ingredients\n- Retrieves relevant information during analysis\n- Enhances AI responses with verified data\n- Uses vector embeddings for semantic search\n\nMemory Key: 'vector_store_key'\nConnected to: AI Agent as a tool"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        2352
+      ],
+      "id": "b71f4d67-bc11-4855-98e9-3e6530adc97e",
+      "name": "🔢 Text Embedding Generator",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "eatGC3TowercmmNn",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "notes": "EMBEDDING ENGINE: Converts text to vector representations\n\nWhat it does:\n- Transforms documents into numerical vectors\n- Enables semantic similarity search\n- Powers the RAG knowledge retrieval\n\nUsed by:\n- Knowledge Base (for queries)\n- Data Storage (for indexing)\n\nRequires: Same Google Gemini API credentials"
+    },
+    {
+      "parameters": {
+        "formTitle": "Upload your data to test RAG",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Upload your file(s)",
+              "fieldType": "file",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "07bac216-be8f-4048-8fdf-86b9ac318a84",
+      "name": "📤 Upload Knowledge Documents",
+      "type": "n8n-nodes-base.formTrigger",
+      "position": [
+        -1088,
+        2320
+      ],
+      "webhookId": "ac8593d5-3b55-4b93-86d3-00d0c9f330ab",
+      "typeVersion": 2.2,
+      "notes": "KNOWLEDGE UPLOAD: Add documents to train the AI\n\nUse this to upload:\n- Scientific research papers (PDF)\n- Ingredient safety databases (CSV, TXT)\n- Health guidelines (DOCX, PDF)\n- Any reference material\n\nSupported formats:\n- PDF, DOCX, TXT, CSV, MD\n\nDocuments are:\n1. Split into chunks\n2. Converted to embeddings\n3. Stored in vector database\n4. Retrieved during analysis"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "memoryKey": {
+          "__rl": true,
+          "value": "vector_store_key",
+          "mode": "list"
+        }
+      },
+      "id": "5b198b4e-856a-421d-ac68-f3463c8d97d1",
+      "name": "💾 Store Knowledge in Database",
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreInMemory",
+      "position": [
+        -528,
+        2016
+      ],
+      "typeVersion": 1.2,
+      "notes": "DATA STORAGE: Saves processed documents to vector database\n\nProcess:\n1. Receives document chunks from loader\n2. Gets embeddings from Gemini\n3. Stores vectors in memory with key 'vector_store_key'\n4. Makes data available for RAG retrieval\n\nNote: Uses in-memory storage (resets on workflow restart)\nFor persistent storage, use Pinecone, Qdrant, or similar"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        2416
+      ],
+      "id": "3fa6a7b8-2993-492c-b60b-63f17d33955f",
+      "name": "📄 Document Processor",
+      "notes": "DOCUMENT CHUNKING: Splits large documents into manageable pieces\n\nFunctionality:\n- Accepts various file formats\n- Splits content into optimal chunks\n- Preserves context and meaning\n- Prepares data for embedding\n\nChunk Strategy:\n- Balanced size for context retention\n- Overlap between chunks to maintain coherence\n\nConnects to: Store Knowledge in Database"
+    },
+    {
+      "parameters": {
+        "content": "## 🎓 RAG KNOWLEDGE SYSTEM\n### Document Loading & Processing\n\nThis splits uploaded content into chunks for efficient retrieval.\n\n**Why chunking?**\n- AI has context limits\n- Smaller chunks = faster search\n- Better semantic matching\n- Improved accuracy\n\n**Best practices:**\n- Upload focused, relevant documents\n- Use clear, scientific sources\n- Update regularly with new research",
+        "height": 432,
+        "width": 576
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1504,
+        2128
+      ],
+      "typeVersion": 1,
+      "id": "ce689878-7f2e-4954-8fb0-a0ceeab6f6b2",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the AI response from the first item\nconst aiOutput = $input.first().json.output;\n\n// Remove markdown code blocks and extract JSON\nlet cleanedOutput = aiOutput\n  .replace(/```json\\n/g, '')\n  .replace(/```/g, '')\n  .trim();\n\n// Parse the JSON\nconst parsedData = JSON.parse(cleanedOutput);\n\n// Create array to store all output items\nconst results = [];\n\n// Add main analysis as first item\nresults.push({\n  json: {\n    type: 'main',\n    riskScore: parsedData.riskScore,\n    message: parsedData.message,\n    totalDangerousIngredients: parsedData.dangerousIngredients?.length || 0,\n    totalAlternatives: parsedData.alternatives?.length || 0\n  }\n});\n\n// Add each dangerous ingredient as separate item\nif (parsedData.dangerousIngredients && parsedData.dangerousIngredients.length > 0) {\n  parsedData.dangerousIngredients.forEach((ingredient, index) => {\n    results.push({\n      json: {\n        type: 'dangerous_ingredient',\n        index: index + 1,\n        name: ingredient.name,\n        effect: ingredient.effect,\n        riskScore: parsedData.riskScore\n      }\n    });\n  });\n}\n\n// Add each alternative as separate item\nif (parsedData.alternatives && parsedData.alternatives.length > 0) {\n  parsedData.alternatives.forEach((alternative, index) => {\n    results.push({\n      json: {\n        type: 'alternative',\n        index: index + 1,\n        name: alternative.name,\n        description: alternative.description,\n        riskScore: parsedData.riskScore\n      }\n    });\n  });\n}\n\nreturn results;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        1568
+      ],
+      "id": "6dc30341-2788-4dce-9686-3fb45ca06107",
+      "name": "✨ Format Results for Output",
+      "notes": "OUTPUT FORMATTING: Structures AI response for easy consumption\n\nProcess:\n1. Cleans AI output (removes markdown formatting)\n2. Parses JSON response\n3. Splits into separate items:\n   - Main summary (risk score + totals)\n   - Individual dangerous ingredients\n   - Individual alternatives\n\nBenefits:\n- Each item can be processed independently\n- Easy to loop through in subsequent nodes\n- Ready for database storage or API response\n\nOutput Types:\n- 'main': Overall analysis\n- 'dangerous_ingredient': Each harmful ingredient\n- 'alternative': Each safer option"
+    },
+    {
+      "parameters": {
+        "content": "## 📥 WORKFLOW INPUT\n### Receive Image with Metadata\n\n**Preferred Format:** Base64 encoded image\n\n**Supported Formats:**\n- JPEG (.jpg, .jpeg)\n- PNG (.png)\n- WebP (.webp)\n\n**Example Payload:**\n```json\n{\n  \"image\": \"iVBORw0KGgoAAAANS...\",\n  \"filename\": \"product-ingredients.jpg\",\n  \"mimeType\": \"image/jpeg\"\n}\n```\n\n**How to Use:**\nSend POST request to the webhook URL with image data",
+        "height": 400,
+        "width": 624
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1552,
+        1616
+      ],
+      "typeVersion": 1,
+      "id": "83901a19-2277-40e8-9f4a-6153ef8e7f03",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "🎯 Receive Product Image": {
+      "main": [
+        [
+          {
+            "node": "📝 Format Image Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Google Gemini AI Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🤖 AI Safety Analyzer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Format Image Data": {
+      "main": [
+        [
+          {
+            "node": "🔍 Extract Text from Image (OCR)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔍 Extract Text from Image (OCR)": {
+      "main": [
+        [
+          {
+            "node": "🤖 AI Safety Analyzer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📚 Knowledge Base (RAG)": {
+      "ai_tool": [
+        [
+          {
+            "node": "🤖 AI Safety Analyzer",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔢 Text Embedding Generator": {
+      "ai_embedding": [
+        [
+          {
+            "node": "📚 Knowledge Base (RAG)",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "💾 Store Knowledge in Database",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Upload Knowledge Documents": {
+      "main": [
+        [
+          {
+            "node": "💾 Store Knowledge in Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📄 Document Processor": {
+      "ai_document": [
+        [
+          {
+            "node": "💾 Store Knowledge in Database",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 AI Safety Analyzer": {
+      "main": [
+        [
+          {
+            "node": "✨ Format Results for Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "cbb6f1ea-e804-452e-8634-cd044d73fcde",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "0f271881de89796a3d508052dd2e4ac2ab8c93de16177cbf48015f4feff8f78c"
+  },
+  "id": "bBjlR8jWu65CrYxE",
+  "tags": []
+}
