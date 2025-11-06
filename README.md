@@ -18,7 +18,6 @@
 </div>
 
 ---
-
 ## 📋 Overview
 
 This repository contains a powerful **n8n workflow** that seamlessly processes documents through an intelligent pipeline:
@@ -30,7 +29,6 @@ graph LR
     C --> D[💾 Vector Store]
     D --> E[🤖 AI Agent]
     E --> F[📊 JSON Output]
-```
 
 **Key Capabilities:**
 - ✅ Accept images or PDFs via webhook/form
